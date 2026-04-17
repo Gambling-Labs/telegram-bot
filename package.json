@@ -1,0 +1,19 @@
+{
+  "name": "aviator-signal-bot",
+  "version": "1.0.0",
+  "description": "Bot para Telegram que envia sinais aleatórios para o jogo Aviator em um canal.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
