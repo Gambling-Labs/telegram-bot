@@ -1,0 +1,29 @@
+# Secrets & runtime config (NEVER commit)
+.env
+.env.*
+!.env.example
+settings.json
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pm2-*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Suspicious / generated artifacts
+*.p12
+"AlienSales Solutions - by apx.p12"

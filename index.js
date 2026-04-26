@@ -57,5 +57,16 @@ bot.setMyCommands(adminCommands, { scope: { type: 'chat', chat_id: config.telegr
 registerAdminHandlers(bot, config.telegram.adminId);
 registerUserHandlers(bot, config.telegram.adminId);
 
+// Defensive global handlers — never let a stray error crash the bot
+process.on('unhandledRejection', (reason) => {
+    console.error('UnhandledRejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('UncaughtException:', err);
+});
+bot.on('polling_error', (err) => {
+    console.error('Polling error:', err.code || '', err.message || err);
+});
+
 console.log('❤ Built with love by Apx');
 console.log('✅ Use the /painel command in a private chat with the bot to access admin controls');

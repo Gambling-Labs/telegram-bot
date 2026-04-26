@@ -106,18 +106,35 @@ function registerAdminHandlers(bot, adminId) {
     });
 
     bot.on('message', async (msg) => {
-        if (msg.from.id !== adminId || !adminState[msg.from.id] || msg.text.startsWith('/')) return;
-        
-        const state = adminState[msg.from.id];
-        const newValue = msg.text;
+        // Ignore non-admin or messages without an active admin state
+        if (msg.from.id !== adminId || !adminState[msg.from.id]) return;
 
-        if (state.action === 'update_setting') {
-            updateSetting(state.mainKey, state.subKey, newValue);
-            await bot.sendMessage(adminId, `✅ Setting '${state.subKey}' updated successfully!`);
+        // Ignore non-text messages (photos, stickers, etc.) — would crash on .startsWith
+        if (typeof msg.text !== 'string') return;
+
+        // Ignore commands
+        if (msg.text.startsWith('/')) return;
+
+        const state = adminState[msg.from.id];
+        const newValue = msg.text.trim();
+
+        if (!newValue) {
+            await bot.sendMessage(adminId, "⚠️ Empty value. Please try again.");
+            return;
         }
-        
-        delete adminState[adminId];
-        await sendAdminPanel(bot, adminId);
+
+        try {
+            if (state.action === 'update_setting') {
+                updateSetting(state.mainKey, state.subKey, newValue);
+                await bot.sendMessage(adminId, `✅ Setting '${state.subKey}' updated successfully!`);
+            }
+        } catch (err) {
+            console.error('Failed to apply admin update:', err.message);
+            await bot.sendMessage(adminId, `❌ Failed to update setting: ${err.message}`);
+        } finally {
+            delete adminState[msg.from.id];
+            await sendAdminPanel(bot, adminId);
+        }
     });
 
     bot.on('callback_query', (cbq) => {
