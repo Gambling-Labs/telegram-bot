@@ -36,7 +36,7 @@ async function sendAdminPanel(bot, chatId) {
 }
 
 function sendImageMenu(bot, chatId) {
-    const text = "🖼️ **Change Images**\n\nSelect which signal image you want to change. You'll need to send a new image link (URL).";
+    const text = "🖼️ **Change Images**\n\nSelect which signal image you want to change. You can send either a filename from the `images/` folder (e.g. `green.jpg`) or a public URL (https://...).";
     const keyboard = {
         inline_keyboard: [
             [{ text: "🔴 Low Signal Image", callback_data: "admin_set_image_red" }],
@@ -66,15 +66,15 @@ function requestAdminInput(bot, chatId, type) {
     let prompt;
     switch (type) {
         case 'image_red':
-            prompt = "Please send the new link (URL) for the 🔴 (Low) signal image.";
+            prompt = "Send the new image for the 🔴 (Low) signal.\n\nOptions:\n• Filename in `images/` folder (e.g. `red.jpg`)\n• Public URL starting with https://";
             adminState[chatId] = { action: 'update_setting', mainKey: 'imageUrls', subKey: 'red' };
             break;
         case 'image_yellow':
-            prompt = "Please send the new link (URL) for the 🟡 (Medium) signal image.";
+            prompt = "Send the new image for the 🟡 (Medium) signal.\n\nOptions:\n• Filename in `images/` folder (e.g. `yellow.jpg`)\n• Public URL starting with https://";
             adminState[chatId] = { action: 'update_setting', mainKey: 'imageUrls', subKey: 'yellow' };
             break;
         case 'image_green':
-            prompt = "Please send the new link (URL) for the 🟢 (High) signal image.";
+            prompt = "Send the new image for the 🟢 (High) signal.\n\nOptions:\n• Filename in `images/` folder (e.g. `green.jpg`)\n• Public URL starting with https://";
             adminState[chatId] = { action: 'update_setting', mainKey: 'imageUrls', subKey: 'green' };
             break;
         case 'phrase_1':

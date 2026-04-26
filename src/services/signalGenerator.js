@@ -1,7 +1,31 @@
+const fs = require('fs');
+const path = require('path');
 const config = require('../../config');
 const { getSettings } = require('./settingsService');
 
 let signalInterval = null;
+
+const IMAGES_DIR = path.join(__dirname, '..', '..', 'images');
+
+/**
+ * Resolves an image reference into something `bot.sendPhoto` can use.
+ * - HTTP/HTTPS URLs are returned as-is.
+ * - Anything else is treated as a filename inside the project's `images/` folder
+ *   and returned as a readable stream.
+ *
+ * @param {string} imageRef
+ * @returns {string | import('fs').ReadStream}
+ */
+function resolveImage(imageRef) {
+    if (/^https?:\/\//i.test(imageRef)) {
+        return imageRef;
+    }
+    const localPath = path.join(IMAGES_DIR, imageRef);
+    if (!fs.existsSync(localPath)) {
+        throw new Error(`Image file not found: ${localPath}`);
+    }
+    return fs.createReadStream(localPath);
+}
 
 /**
  * @returns {{multiplier: string, emoji: string, imageUrl: string}}
@@ -56,7 +80,15 @@ function sendSignal(bot) {
         ]
     };
 
-    bot.sendPhoto(channelId, imageUrl, {
+    let photo;
+    try {
+        photo = resolveImage(imageUrl);
+    } catch (err) {
+        console.error(`Failed to resolve image '${imageUrl}':`, err.message);
+        return;
+    }
+
+    bot.sendPhoto(channelId, photo, {
         caption: caption,
         parse_mode: 'Markdown',
         reply_markup: keyboard

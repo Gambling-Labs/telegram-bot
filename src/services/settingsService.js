@@ -5,9 +5,9 @@ const settingsFilePath = path.join(__dirname, '..', '..', 'settings.json');
 
 const defaultSettings = {
   imageUrls: {
-    green: 'https://i.imgur.com/BAPIbL4.jpeg',
-    yellow: 'https://i.imgur.com/njoarXh.jpeg',
-    red: 'https://i.imgur.com/zS2yDav.jpeg'
+    green: 'BAPIbL4.jpeg',
+    yellow: 'njoarXh.jpeg',
+    red: 'zS2yDav.jpeg'
   },
   phrases: {
     entradaConfirmada: "✅Entry confirmed✅",
