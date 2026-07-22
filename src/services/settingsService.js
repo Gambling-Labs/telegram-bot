@@ -15,19 +15,41 @@ const defaultSettings = {
 		plataformaAbaixo: "🖥 Platform below~👇",
 		entrarNaCasa: "✈Join the house✈",
 	},
+	// Whether automatic signals were running. Persisted so the bot resumes
+	// them after a restart/crash instead of going silent until the admin
+	// reopens /painel and clicks "Start" again.
+	signalsRunning: false,
 };
+
+/**
+ * A fresh, isolated copy of the defaults so callers never mutate the shared
+ * module-level object.
+ */
+function cloneDefaults() {
+	return JSON.parse(JSON.stringify(defaultSettings));
+}
+
+/**
+ * Atomic write: serialize to a temp file then rename over the target. A crash
+ * (e.g. SIGKILL) mid-write leaves the original file intact instead of a
+ * truncated/corrupt JSON.
+ *
+ * @param {object} settings
+ */
+function writeSettings(settings) {
+	const tmpPath = `${settingsFilePath}.tmp`;
+	fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2), "utf8");
+	fs.renameSync(tmpPath, settingsFilePath);
+}
 
 /**
  * @returns {typeof defaultSettings}
  */
 function getSettings() {
 	if (!fs.existsSync(settingsFilePath)) {
-		fs.writeFileSync(
-			settingsFilePath,
-			JSON.stringify(defaultSettings, null, 2),
-			"utf8",
-		);
-		return defaultSettings;
+		const fresh = cloneDefaults();
+		writeSettings(fresh);
+		return fresh;
 	}
 	try {
 		const settings = JSON.parse(fs.readFileSync(settingsFilePath, "utf8"));
@@ -37,7 +59,7 @@ function getSettings() {
 			"Failed to read settings file. Falling back to defaults.",
 			error,
 		);
-		return defaultSettings;
+		return cloneDefaults();
 	}
 }
 
@@ -82,16 +104,35 @@ function updateSetting(mainKey, subKey, value) {
 	}
 
 	settings[mainKey][subKey] = cleanValue;
-	fs.writeFileSync(
-		settingsFilePath,
-		JSON.stringify(settings, null, 2),
-		"utf8",
-	);
+	writeSettings(settings);
 	console.log(`Setting updated: ${mainKey}.${subKey}`);
 	return true;
+}
+
+/**
+ * @returns {boolean} whether automatic signals were enabled before.
+ */
+function isSignalsEnabled() {
+	return getSettings().signalsRunning === true;
+}
+
+/**
+ * Persists whether automatic signals are enabled, so the state survives
+ * restarts. Merges into the existing settings file without touching other keys.
+ *
+ * @param {boolean} enabled
+ * @returns {boolean} the value that was persisted.
+ */
+function setSignalsEnabled(enabled) {
+	const settings = getSettings();
+	settings.signalsRunning = enabled === true;
+	writeSettings(settings);
+	return settings.signalsRunning;
 }
 
 module.exports = {
 	getSettings,
 	updateSetting,
+	isSignalsEnabled,
+	setSignalsEnabled,
 };

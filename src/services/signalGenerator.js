@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../../config');
-const { getSettings } = require('./settingsService');
+const { getSettings, isSignalsEnabled, setSignalsEnabled } = require('./settingsService');
 
 let signalInterval = null;
 
@@ -99,28 +99,69 @@ function sendSignal(bot) {
 
 /**
  * @param {TelegramBot} bot
+ * @param {{ persist?: boolean, immediate?: boolean }} [options]
+ *        persist=false skips writing the enabled flag (used for auto-resume,
+ *        where it's already true). immediate=false skips the leading signal so
+ *        a crash-loop of restarts can't spam the channel out of cadence.
  */
-function start(bot) {
+function start(bot, { persist = true, immediate = true } = {}) {
     if (signalInterval) {
         console.log("Signal generator is already active.");
         return;
     }
     console.log("Starting signal generator with 3 minute interval...");
 
-    sendSignal(bot);
-
+    // In-memory action first: a failed settings write must never leave the bot
+    // "enabled" on disk while not actually sending.
+    if (immediate) {
+        sendSignal(bot);
+    }
     signalInterval = setInterval(() => {
         sendSignal(bot);
     }, config.signalGenerator.signalIntervalSeconds * 1000);
+
+    if (persist) {
+        try {
+            setSignalsEnabled(true);
+        } catch (err) {
+            console.error("Could not persist signals-enabled state:", err.message);
+        }
+    }
 }
 
-function stop() {
+/**
+ * @param {{ persist?: boolean }} [options] persist=false clears the in-memory
+ *        interval without disabling auto-resume.
+ */
+function stop({ persist = true } = {}) {
     if (signalInterval) {
         clearInterval(signalInterval);
         signalInterval = null;
         console.log("Signal generator stopped.");
     } else {
         console.log("Signal generator was already stopped.");
+    }
+
+    if (persist) {
+        try {
+            setSignalsEnabled(false);
+        } catch (err) {
+            console.error("Could not persist signals-disabled state:", err.message);
+        }
+    }
+}
+
+/**
+ * Resumes automatic signals on boot if they were enabled before the last
+ * restart. Does not fire an immediate signal — the first one follows the normal
+ * interval, so repeated restarts can't spam the channel. Called once at startup.
+ *
+ * @param {TelegramBot} bot
+ */
+function resumeIfEnabled(bot) {
+    if (isSignalsEnabled() && !signalInterval) {
+        console.log("↻ Auto-signals were enabled before restart — resuming (next signal on the normal 3 min cadence).");
+        start(bot, { persist: false, immediate: false });
     }
 }
 
@@ -135,5 +176,6 @@ module.exports = {
     start,
     stop,
     sendSignal,
+    resumeIfEnabled,
     isRunning
 };
